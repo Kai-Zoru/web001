@@ -158,6 +158,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen overflow-x-clip text-white">
+      <div className="fixed inset-0 -z-10 h-full w-full bg-gradient-to-b from-[#0a192f] via-[#020617] to-[#000000] transform-gpu" />
       <header
         className={`fixed top-0 left-0 z-[100] w-full isolate bg-[#0f172a]/70 backdrop-blur-3xl ${
           isMobileMenuOpen ? "" : "border-b border-white/10"
@@ -223,7 +224,7 @@ export default function Home() {
         ) : null}
       </header>
 
-      <main className="min-h-screen bg-[linear-gradient(180deg,#000102_0%,#004E9C_100%)] bg-fixed bg-cover">
+      <main className="min-h-screen bg-transparent">
         <HeroPeacockPin />
 
         <section className="min-h-screen py-20 flex items-center justify-center">

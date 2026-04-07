@@ -158,7 +158,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen overflow-x-clip text-white">
-      <div className="fixed inset-0 -z-10 h-full w-full bg-gradient-to-b from-[#0a192f] via-[#020617] to-[#000000] transform-gpu" />
+      <div className="fixed inset-0 -z-10 h-full w-full bg-gradient-to-b from-[#000102] to-[#004E9C] transform-gpu" />
       <header
         className={`fixed top-0 left-0 z-[100] w-full isolate bg-[#0f172a]/70 backdrop-blur-3xl ${
           isMobileMenuOpen ? "" : "border-b border-white/10"

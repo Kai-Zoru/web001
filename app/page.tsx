@@ -1,27 +1,38 @@
 "use client";
-import { animate, motion, MotionValue, useMotionValue, useScroll, useTransform } from "framer-motion";
+import { animate, motion, MotionValue, useMotionValue, useScroll, useSpring, useTransform } from "framer-motion";
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
 /** Desktop: full peacock at spread === 1. Index 3 = center anchor (no motion). */
 const PEACOCK_DESKTOP = [
-  { x: -480, y: 60, rotate: -12, bg: "bg-gray-700" },
-  { x: -320, y: 30, rotate: -7, bg: "bg-gray-600" },
-  { x: -160, y: 10, rotate: -3, bg: "bg-gray-500" },
-  { x: 0, y: 0, rotate: 0, bg: "bg-gray-400" },
-  { x: 160, y: 10, rotate: 3, bg: "bg-gray-500" },
-  { x: 320, y: 30, rotate: 7, bg: "bg-gray-600" },
-  { x: 480, y: 60, rotate: 12, bg: "bg-gray-700" },
+  { x: -480, y: 60, rotate: -12 },
+  { x: -320, y: 30, rotate: -7 },
+  { x: -160, y: 10, rotate: -3 },
+  { x: 0, y: 0, rotate: 0 },
+  { x: 160, y: 10, rotate: 3 },
+  { x: 320, y: 30, rotate: 7 },
+  { x: 480, y: 60, rotate: 12 }
 ] as const;
 
 /** Mobile (<768px): reduced fan so cards stay on-screen. */
 const PEACOCK_MOBILE = [
-  { x: -120, y: 20, rotate: -5, bg: "bg-gray-700" },
-  { x: -80, y: 12, rotate: -3, bg: "bg-gray-600" },
-  { x: -40, y: 6, rotate: -2, bg: "bg-gray-500" },
-  { x: 0, y: 0, rotate: 0, bg: "bg-gray-400" },
-  { x: 40, y: 6, rotate: 2, bg: "bg-gray-500" },
-  { x: 80, y: 12, rotate: 3, bg: "bg-gray-600" },
-  { x: 120, y: 20, rotate: 5, bg: "bg-gray-700" },
+  { x: -120, y: 20, rotate: -5 },
+  { x: -80, y: 12, rotate: -3 },
+  { x: -40, y: 6, rotate: -2 },
+  { x: 0, y: 0, rotate: 0 },
+  { x: 40, y: 6, rotate: 2 },
+  { x: 80, y: 12, rotate: 3 },
+  { x: 120, y: 20, rotate: 5 },
+] as const;
+
+const CARD_IMAGES = [
+  "/images/card_01.png",
+  "/images/card_02.png",
+  "/images/card_03.png",
+  "/images/card_04.png",
+  "/images/card_05.png",
+  "/images/card_06.png",
+  "/images/card_07.png",
 ] as const;
 
 function zIndexForCard(index: number) {
@@ -36,7 +47,7 @@ function PeacockCard({
 }: {
   index: number;
   spread: MotionValue<number>;
-  target: { readonly x: number; readonly y: number; readonly rotate: number; readonly bg: string };
+  target: { readonly x: number; readonly y: number; readonly rotate: number };
 }) {
   const x = useTransform(spread, (s) => target.x * s);
   const y = useTransform(spread, (s) => target.y * s);
@@ -54,14 +65,26 @@ function PeacockCard({
         scale,
         zIndex: zIndexForCard(index),
       }}
-      className={`absolute inset-0 rounded-2xl shadow-xl ${target.bg}`}
-    />
+      className="absolute inset-0 overflow-hidden rounded-2xl drop-shadow-[0_12px_24px_rgba(0,0,0,0.06)]"
+    >
+      <Image
+        src={CARD_IMAGES[index]}
+        alt={`Card ${index + 1}`}
+        fill
+        className="rounded-2xl object-cover"
+      />
+    </motion.div>
   );
 }
 
 function HeroPeacockPin() {
   const scrollRef = useRef<HTMLElement | null>(null);
   const spread = useMotionValue(0);
+  const smoothedSpread = useSpring(spread, {
+    stiffness: 180,
+    damping: 24,
+    mass: 0.6,
+  });
   const [entranceDone, setEntranceDone] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
 
@@ -69,6 +92,7 @@ function HeroPeacockPin() {
     target: scrollRef,
     offset: ["start start", "end end"],
   });
+  const heldProgress = useTransform(scrollYProgress, [0, 0.7, 1], [0.15, 1, 1]);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 767px)");
@@ -91,34 +115,38 @@ function HeroPeacockPin() {
   useEffect(() => {
     if (!entranceDone) return;
     const applyScroll = (latest: number) => {
-      spread.set(0.15 + latest * 0.85);
+      spread.set(latest);
     };
-    applyScroll(scrollYProgress.get());
-    return scrollYProgress.on("change", applyScroll);
-  }, [entranceDone, scrollYProgress, spread]);
+    applyScroll(heldProgress.get());
+    return heldProgress.on("change", applyScroll);
+  }, [entranceDone, heldProgress, spread]);
 
   const targets = isMobile ? PEACOCK_MOBILE : PEACOCK_DESKTOP;
 
   return (
-    <section ref={scrollRef} className="relative h-[400vh]">
+    <section ref={scrollRef} className="relative h-[160vh]">
       <div className="sticky top-0 flex h-screen w-full flex-col items-center justify-center overflow-hidden">
-        <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-center gap-y-6 px-4 pb-4 pt-24 text-center sm:px-6 sm:pt-28">
-          <h1 className="text-3xl font-bold text-white sm:text-5xl">
-            One Browser For All Your Accounts
-          </h1>
+        <div className="mx-auto flex h-full w-full max-w-7xl flex-col items-center px-4 pb-8 pt-20 text-center sm:px-6 md:max-lg:justify-between md:max-lg:py-24 md:pb-4 md:pt-28 lg:justify-center lg:gap-y-6">
+          <div className="flex w-full flex-1 items-end justify-center pb-8 md:max-lg:flex-1 md:max-lg:items-start md:max-lg:pt-12 lg:flex-none lg:items-center lg:pb-0">
+            <h1 className="font-sans text-3xl font-bold tracking-tighter text-white sm:text-5xl">
+              One Browser For All Your Accounts
+            </h1>
+          </div>
 
-          <div className="relative h-56 w-44 sm:h-80 sm:w-64">
+          <div className="relative h-56 w-44 shrink-0 sm:h-80 sm:w-64">
             {targets.map((t, index) => (
-              <PeacockCard key={index} index={index} spread={spread} target={t} />
+              <PeacockCard key={index} index={index} spread={smoothedSpread} target={t} />
             ))}
           </div>
 
-          <button
-            type="button"
-            className="rounded-full border border-white/20 bg-[#000102] px-5 py-2 text-sm font-medium text-white transition-colors duration-300 hover:bg-[#0f172a]"
-          >
-            Download
-          </button>
+          <div className="flex w-full flex-1 items-start justify-center pt-8 md:max-lg:flex-1 md:max-lg:items-end md:max-lg:pb-20 lg:flex-none lg:items-center lg:pt-0">
+            <button
+              type="button"
+              className="rounded-full border border-white/20 bg-[#000102] px-5 py-2 text-sm font-medium text-white transition-colors duration-300 hover:bg-[#0f172a]"
+            >
+              Download
+            </button>
+          </div>
         </div>
       </div>
     </section>
@@ -198,39 +226,43 @@ export default function Home() {
       <main className="min-h-screen bg-[linear-gradient(180deg,#000102_0%,#004E9C_100%)] bg-fixed bg-cover">
         <HeroPeacockPin />
 
-        <section className="w-full overflow-x-hidden py-24">
-          <div className="mx-auto flex h-auto min-h-[calc(100vh-8rem)] w-full max-w-7xl flex-col justify-center px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 gap-6 md:h-full md:grid-cols-3 md:grid-rows-2 md:gap-4">
-              <article className="flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#000102]/50 p-8 backdrop-blur-xl md:col-span-2">
-              <h3 className="text-2xl font-bold text-white">Dynamic Fingerprinting</h3>
-              <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-gray-400">
-                Forge a unique digital identity for every profile. To trackers, each session appears as a completely distinct physical device.
-              </p>
-              <div className="mt-auto min-h-[80px] w-full flex-1 rounded-xl border border-dashed border-white/20 bg-black/50" />
+        <section className="min-h-screen py-20 flex items-center justify-center">
+          <div className="max-w-7xl mx-auto w-full px-6">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              <article className="relative min-h-[280px] overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl md:col-span-7">
+              <div className="relative z-10 p-8 md:p-10">
+                <h3 className="text-2xl font-bold text-white">Dynamic Fingerprinting</h3>
+                <p className="mt-4 max-w-md text-sm font-medium leading-6 text-gray-400">
+                  Forge a unique digital identity for every profile. To trackers, each session appears as a completely distinct physical device.
+                </p>
+              </div>
               </article>
 
-              <article className="flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#000102]/50 p-8 backdrop-blur-xl md:col-span-1">
+              <article className="relative min-h-[280px] overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl md:col-span-5">
+              <div className="relative z-10 p-8 md:p-10">
               <h3 className="text-2xl font-bold text-white">Isolated Environments</h3>
-              <p className="mt-3 text-sm font-medium leading-6 text-gray-400">
+              <p className="mt-4 max-w-md text-sm font-medium leading-6 text-gray-400">
                 Run unlimited accounts in total isolation. Each profile maintains its own dedicated cookies, local storage, and secure sandbox.
               </p>
-              <div className="mt-auto min-h-[80px] w-full flex-1 rounded-xl border border-dashed border-white/20 bg-white/5" />
+              </div>
               </article>
 
-              <article className="flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#000102]/50 p-8 backdrop-blur-xl md:col-span-1">
+              <article className="relative min-h-[280px] overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl md:col-span-5">
+              <div className="relative z-10 p-8 md:p-10">
               <h3 className="text-2xl font-bold text-white">Granular Proxy Control</h3>
-              <p className="mt-3 text-sm font-medium leading-6 text-gray-400">
+              <p className="mt-4 max-w-md text-sm font-medium leading-6 text-gray-400">
                 Assign independent Proxies or VPNs to each profile with zero leakage. Maintain regional consistency across your entire workflow.
               </p>
-              <div className="mt-auto min-h-[80px] w-full flex-1 rounded-xl border border-dashed border-white/20 bg-black/50" />
+              </div>
               </article>
 
-              <article className="flex h-full flex-col overflow-hidden rounded-3xl border border-white/10 bg-[#000102]/50 p-8 backdrop-blur-xl md:col-span-2">
+              <article className="relative min-h-[280px] overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl md:col-span-7">
+              <div className="relative z-10 p-8 md:p-10">
               <h3 className="text-2xl font-bold text-white">Cross-Profile Privacy</h3>
-              <p className="mt-3 max-w-2xl text-sm font-medium leading-6 text-gray-400">
+              <p className="mt-4 max-w-md text-sm font-medium leading-6 text-gray-400">
                 Shatter the data trail. Our architecture prevents trackers from correlating your activities, ensuring your profiles remain invisible to each other.
               </p>
-              <div className="mt-auto min-h-[80px] w-full flex-1 rounded-xl border border-dashed border-white/20 bg-black/50" />
+              </div>
               </article>
             </div>
           </div>

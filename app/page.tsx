@@ -1,11 +1,135 @@
 "use client";
-import { useState } from "react";
+import { animate, motion, MotionValue, useMotionValue, useScroll, useTransform } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+
+/** Desktop: full peacock at spread === 1. Index 3 = center anchor (no motion). */
+const PEACOCK_DESKTOP = [
+  { x: -480, y: 60, rotate: -12, bg: "bg-gray-700" },
+  { x: -320, y: 30, rotate: -7, bg: "bg-gray-600" },
+  { x: -160, y: 10, rotate: -3, bg: "bg-gray-500" },
+  { x: 0, y: 0, rotate: 0, bg: "bg-gray-400" },
+  { x: 160, y: 10, rotate: 3, bg: "bg-gray-500" },
+  { x: 320, y: 30, rotate: 7, bg: "bg-gray-600" },
+  { x: 480, y: 60, rotate: 12, bg: "bg-gray-700" },
+] as const;
+
+/** Mobile (<768px): reduced fan so cards stay on-screen. */
+const PEACOCK_MOBILE = [
+  { x: -120, y: 20, rotate: -5, bg: "bg-gray-700" },
+  { x: -80, y: 12, rotate: -3, bg: "bg-gray-600" },
+  { x: -40, y: 6, rotate: -2, bg: "bg-gray-500" },
+  { x: 0, y: 0, rotate: 0, bg: "bg-gray-400" },
+  { x: 40, y: 6, rotate: 2, bg: "bg-gray-500" },
+  { x: 80, y: 12, rotate: 3, bg: "bg-gray-600" },
+  { x: 120, y: 20, rotate: 5, bg: "bg-gray-700" },
+] as const;
+
+function zIndexForCard(index: number) {
+  if (index === 3) return 70;
+  return 30 - Math.abs(index - 3) * 4;
+}
+
+function PeacockCard({
+  index,
+  spread,
+  target,
+}: {
+  index: number;
+  spread: MotionValue<number>;
+  target: { readonly x: number; readonly y: number; readonly rotate: number; readonly bg: string };
+}) {
+  const x = useTransform(spread, (s) => target.x * s);
+  const y = useTransform(spread, (s) => target.y * s);
+  const rotate = useTransform(spread, (s) => target.rotate * s);
+  const opacity = useTransform(spread, [0, 0.15, 1], [0, 1, 1]);
+  const scale = useTransform(spread, [0, 0.15, 1], [0.8, 1, 1]);
+
+  return (
+    <motion.div
+      style={{
+        x,
+        y,
+        rotate,
+        opacity,
+        scale,
+        zIndex: zIndexForCard(index),
+      }}
+      className={`absolute inset-0 rounded-2xl shadow-xl ${target.bg}`}
+    />
+  );
+}
+
+function HeroPeacockPin() {
+  const scrollRef = useRef<HTMLElement | null>(null);
+  const spread = useMotionValue(0);
+  const [entranceDone, setEntranceDone] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  const { scrollYProgress } = useScroll({
+    target: scrollRef,
+    offset: ["start start", "end end"],
+  });
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const sync = () => setIsMobile(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  useEffect(() => {
+    const controls = animate(spread, 0.15, {
+      type: "spring",
+      stiffness: 200,
+      damping: 20,
+    });
+    void controls.then(() => setEntranceDone(true));
+    return () => controls.stop();
+  }, [spread]);
+
+  useEffect(() => {
+    if (!entranceDone) return;
+    const applyScroll = (latest: number) => {
+      spread.set(0.15 + latest * 0.85);
+    };
+    applyScroll(scrollYProgress.get());
+    return scrollYProgress.on("change", applyScroll);
+  }, [entranceDone, scrollYProgress, spread]);
+
+  const targets = isMobile ? PEACOCK_MOBILE : PEACOCK_DESKTOP;
+
+  return (
+    <section ref={scrollRef} className="relative h-[400vh]">
+      <div className="sticky top-0 flex h-screen w-full flex-col items-center justify-center overflow-hidden">
+        <div className="mx-auto flex w-full max-w-7xl flex-col items-center justify-center gap-y-6 px-4 pb-4 pt-24 text-center sm:px-6 sm:pt-28">
+          <h1 className="text-3xl font-bold text-white sm:text-5xl">
+            One Browser For All Your Accounts
+          </h1>
+
+          <div className="relative h-56 w-44 sm:h-80 sm:w-64">
+            {targets.map((t, index) => (
+              <PeacockCard key={index} index={index} spread={spread} target={t} />
+            ))}
+          </div>
+
+          <button
+            type="button"
+            className="rounded-full border border-white/20 bg-[#000102] px-5 py-2 text-sm font-medium text-white transition-colors duration-300 hover:bg-[#0f172a]"
+          >
+            Download
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="min-h-screen overflow-x-hidden text-white">
+    <div className="min-h-screen overflow-x-clip text-white">
       <header
         className={`fixed top-0 left-0 z-[100] w-full isolate bg-[#0f172a]/70 backdrop-blur-3xl ${
           isMobileMenuOpen ? "" : "border-b border-white/10"
@@ -71,29 +195,8 @@ export default function Home() {
         ) : null}
       </header>
 
-      <main className="min-h-screen overflow-x-hidden bg-[linear-gradient(180deg,#000102_0%,#004E9C_100%)] bg-fixed bg-cover">
-        <section className="overflow-x-hidden">
-          <div className="mx-auto flex min-h-[calc(100vh-3.5rem)] w-full max-w-7xl flex-col items-center justify-center gap-y-6 px-4 pb-4 pt-24 text-center sm:px-6 sm:pt-28">
-            <h1 className="text-3xl font-bold text-white sm:text-5xl">
-              One Browser For All Your Accounts
-            </h1>
-
-            <div className="relative h-56 w-44 sm:h-80 sm:w-64">
-              <div className="absolute inset-0 z-10 -translate-x-16 scale-90 rounded-2xl bg-gray-600 shadow-xl sm:-translate-x-24" />
-              <div className="absolute inset-0 z-20 -translate-x-8 scale-95 rounded-2xl bg-gray-500 shadow-xl sm:-translate-x-12" />
-              <div className="absolute inset-0 z-30 rounded-2xl bg-gray-400 shadow-xl" />
-              <div className="absolute inset-0 z-20 translate-x-8 scale-95 rounded-2xl bg-gray-500 shadow-xl sm:translate-x-12" />
-              <div className="absolute inset-0 z-10 translate-x-16 scale-90 rounded-2xl bg-gray-600 shadow-xl sm:translate-x-24" />
-            </div>
-
-            <button
-              type="button"
-              className="rounded-full border border-white/20 bg-[#000102] px-5 py-2 text-sm font-medium text-white transition-colors duration-300 hover:bg-[#0f172a]"
-            >
-              Download
-            </button>
-          </div>
-        </section>
+      <main className="min-h-screen bg-[linear-gradient(180deg,#000102_0%,#004E9C_100%)] bg-fixed bg-cover">
+        <HeroPeacockPin />
 
         <section className="w-full overflow-x-hidden py-24">
           <div className="mx-auto flex h-auto min-h-[calc(100vh-8rem)] w-full max-w-7xl flex-col justify-center px-4 sm:px-6 lg:px-8">

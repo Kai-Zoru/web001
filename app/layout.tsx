@@ -31,7 +31,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${cantataOne.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${cantataOne.variable} h-full scroll-smooth antialiased`}
     >
       <body className="min-h-full flex flex-col font-[family-name:var(--font-geist-sans)]">{children}</body>
     </html>

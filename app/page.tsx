@@ -1,7 +1,16 @@
 "use client";
-import { animate, motion, MotionValue, useMotionValue, useScroll, useSpring, useTransform } from "framer-motion";
+import {
+  animate,
+  AnimatePresence,
+  motion,
+  MotionValue,
+  useMotionValue,
+  useScroll,
+  useSpring,
+  useTransform,
+} from "framer-motion";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /** Desktop: full peacock at spread === 1. Index 3 = center anchor (no motion). */
 const PEACOCK_DESKTOP = [
@@ -77,7 +86,7 @@ function PeacockCard({
   );
 }
 
-function HeroPeacockPin() {
+function HeroPeacockPin({ onShowcaseClick }: { onShowcaseClick: () => void }) {
   const scrollRef = useRef<HTMLElement | null>(null);
   const spread = useMotionValue(0);
   const smoothedSpread = useSpring(spread, {
@@ -142,6 +151,7 @@ function HeroPeacockPin() {
           <div className="flex w-full flex-1 items-start justify-center pt-8 md:max-lg:flex-1 md:max-lg:items-end md:max-lg:pb-20 lg:flex-none lg:items-center lg:pt-0">
             <button
               type="button"
+              onClick={onShowcaseClick}
               className="rounded-full border border-white/20 bg-[#000102] px-5 py-2 text-sm font-medium text-white transition-colors duration-300 hover:bg-[#0f172a]"
             >
               Download
@@ -155,6 +165,23 @@ function HeroPeacockPin() {
 
 export default function Home() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showcaseToast, setShowcaseToast] = useState(false);
+  const showcaseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const triggerShowcaseToast = useCallback(() => {
+    setShowcaseToast(true);
+    if (showcaseTimerRef.current) clearTimeout(showcaseTimerRef.current);
+    showcaseTimerRef.current = setTimeout(() => {
+      setShowcaseToast(false);
+      showcaseTimerRef.current = null;
+    }, 5000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (showcaseTimerRef.current) clearTimeout(showcaseTimerRef.current);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen overflow-x-clip text-white">
@@ -167,19 +194,34 @@ export default function Home() {
         <nav className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="text-xl font-bold tracking-widest text-white font-[family-name:var(--font-cantata)]">ORBIS</div>
           <div className="hidden items-center gap-x-8 md:flex">
-            <a href="#" className="text-sm font-medium text-gray-300 transition-colors hover:text-white">
+            <a href="#features" className="text-sm font-medium text-gray-300 transition-colors hover:text-white">
               Features
             </a>
-            <a href="#" className="text-sm font-medium text-gray-300 transition-colors hover:text-white">
+            <a
+              href="#"
+              className="text-sm font-medium text-gray-300 transition-colors hover:text-white"
+              onClick={(e) => {
+                e.preventDefault();
+                triggerShowcaseToast();
+              }}
+            >
               Pricing
             </a>
-            <a href="#" className="text-sm font-medium text-gray-300 transition-colors hover:text-white">
+            <a
+              href="#"
+              className="text-sm font-medium text-gray-300 transition-colors hover:text-white"
+              onClick={(e) => {
+                e.preventDefault();
+                triggerShowcaseToast();
+              }}
+            >
               FAQ
             </a>
           </div>
           <button
             type="button"
             className="hidden rounded-full border border-white bg-transparent px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10 md:block"
+            onClick={triggerShowcaseToast}
           >
             Download
           </button>
@@ -204,18 +246,42 @@ export default function Home() {
         {isMobileMenuOpen ? (
           <div className="absolute left-0 top-full z-[100] w-full border-b border-white/10 bg-[#000102] px-4 py-4 shadow-[0_20px_50px_rgba(0,0,0,0.8)] md:hidden">
             <div className="mx-auto flex w-full max-w-7xl flex-col gap-4">
-              <a href="#" className="text-sm font-medium text-gray-300 transition-colors hover:text-white">
+              <a
+                href="#features"
+                className="text-sm font-medium text-gray-300 transition-colors hover:text-white"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
                 Features
               </a>
-              <a href="#" className="text-sm font-medium text-gray-300 transition-colors hover:text-white">
+              <a
+                href="#"
+                className="text-sm font-medium text-gray-300 transition-colors hover:text-white"
+                onClick={(e) => {
+                  e.preventDefault();
+                  triggerShowcaseToast();
+                  setIsMobileMenuOpen(false);
+                }}
+              >
                 Pricing
               </a>
-              <a href="#" className="text-sm font-medium text-gray-300 transition-colors hover:text-white">
+              <a
+                href="#"
+                className="text-sm font-medium text-gray-300 transition-colors hover:text-white"
+                onClick={(e) => {
+                  e.preventDefault();
+                  triggerShowcaseToast();
+                  setIsMobileMenuOpen(false);
+                }}
+              >
                 FAQ
               </a>
               <button
                 type="button"
                 className="w-full rounded-full border border-white bg-transparent px-5 py-2 text-sm font-medium text-white transition-colors hover:bg-white/10"
+                onClick={() => {
+                  triggerShowcaseToast();
+                  setIsMobileMenuOpen(false);
+                }}
               >
                 Download
               </button>
@@ -225,9 +291,9 @@ export default function Home() {
       </header>
 
       <main className="min-h-screen bg-transparent">
-        <HeroPeacockPin />
+        <HeroPeacockPin onShowcaseClick={triggerShowcaseToast} />
 
-        <section className="min-h-screen py-20 flex items-center justify-center">
+        <section id="features" className="min-h-screen py-20 flex items-center justify-center">
           <div className="max-w-7xl mx-auto w-full px-6">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
               <article className="relative min-h-[280px] overflow-hidden rounded-3xl border border-white/10 bg-white/5 backdrop-blur-xl md:col-span-7">
@@ -281,6 +347,23 @@ export default function Home() {
           </div>
         </footer>
       </main>
+
+      <AnimatePresence>
+        {showcaseToast ? (
+          <motion.div
+            key="showcase-toast"
+            role="status"
+            aria-live="polite"
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 24, opacity: 0 }}
+            transition={{ type: "spring", damping: 20, stiffness: 100 }}
+            className="fixed bottom-10 left-1/2 z-[100] w-[90%] max-w-[400px] -translate-x-1/2 rounded-2xl border border-white/20 bg-black/60 px-6 py-4 text-center text-sm leading-relaxed text-white backdrop-blur-md"
+          >
+            Showcase Mode: This is a UI/UX prototype. Functional logic is disabled for this demonstration.
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
